@@ -1,18 +1,19 @@
-package main
+package filemenu
 
 import (
+	"ember/helpers"
 	"errors"
 	"path/filepath"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 )
 
 func projectSelectContainer(window fyne.Window, projectPath *string) *fyne.Container {
-	var dirLabel = widget.NewLabel("No project is open...yet")
-	var openButton = widget.NewButton("open", func() {
+	var openButton = widget.NewButton("Open Existing", func() {
 		var folderDialog = dialog.NewFolderOpen(func(uri fyne.ListableURI, err error) {
 			if err != nil {
 				dialog.ShowError(err, window)
@@ -20,18 +21,17 @@ func projectSelectContainer(window fyne.Window, projectPath *string) *fyne.Conta
 			}
 
 			if uri != nil {
-				if err := isValidProject(uri.Path()); err != nil {
+				if err := helpers.IsValidProject(uri.Path()); err != nil {
 					dialog.ShowError(err, window)
 					return
 				}
 				*projectPath = uri.Path()
-				dirLabel.SetText(*projectPath)
 			}
 		}, window)
 
 		folderDialog.Show()
 	})
-	var createButton = widget.NewButton("create", func() {
+	var createButton = widget.NewButton("New Project", func() {
 
 		var newFolderEntry = widget.NewEntry()
 		newFolderEntry.SetPlaceHolder("Set project path")
@@ -72,13 +72,12 @@ func projectSelectContainer(window fyne.Window, projectPath *string) *fyne.Conta
 						return
 					}
 
-					if err := createProject(path, name); err != nil {
+					if err := helpers.CreateProject(path, name); err != nil {
 						dialog.ShowError(err, window)
 						return
 					}
 
 					*projectPath = filepath.Join(path, name)
-					dirLabel.SetText(*projectPath)
 					dialog.ShowInformation("Project info", "Project created successfully!", window)
 				}
 			}, window)
@@ -87,5 +86,5 @@ func projectSelectContainer(window fyne.Window, projectPath *string) *fyne.Conta
 		createFolderForm.Show()
 	})
 
-	return container.NewBorder(nil, nil, nil, container.NewHBox(openButton, createButton), dirLabel)
+	return container.NewBorder(nil, nil, nil, container.NewHBox(createButton, openButton), layout.NewSpacer())
 }

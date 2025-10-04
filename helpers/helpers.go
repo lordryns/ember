@@ -1,4 +1,4 @@
-package main
+package helpers
 
 import (
 	"errors"
@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-func createProject(path string, name string) error {
+func CreateProject(path string, name string) error {
 	var fullPath = filepath.Join(path, name)
 
 	var _, statErr = os.Stat(fullPath)
@@ -26,7 +26,7 @@ func createProject(path string, name string) error {
 	return nil
 }
 
-func isValidProject(path string) error {
+func IsValidProject(path string) error {
 	var configPath = filepath.Join(path, "ember.json")
 	var _, err = os.Stat(configPath)
 	if os.IsNotExist(err) {
