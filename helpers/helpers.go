@@ -1,6 +1,8 @@
 package helpers
 
 import (
+	"ember/engine"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -19,10 +21,21 @@ func CreateProject(path string, name string) error {
 		return err
 	}
 
-	var _, err = os.Create(filepath.Join(fullPath, "ember.json"))
+	var config = engine.GameConfig{Title: name}
+	var configBytes, confErr = json.Marshal(config)
+	if confErr != nil {
+		return confErr
+	}
+
+	var configFile, err = os.Create(filepath.Join(fullPath, "ember.json"))
 	if err != nil {
 		return fmt.Errorf("%s\nError occured during the creation of the %v.ember file", err, name)
 	}
+
+	configFile.Write(configBytes)
+
+	defer configFile.Close()
+
 	return nil
 }
 

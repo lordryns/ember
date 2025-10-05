@@ -1,0 +1,31 @@
+{
+  "title": "Game Name", 
+  "sprites": [
+    {
+      "id": "sprite1", 
+      "type": "image/spritesheet",
+      "path": "path/to/image", 
+      "spritesheet": {"x": 128, "y": 128, "frames": 5}
+    }, 
+  ], 
+  "objects": [
+    {
+      "id": "player", 
+      "sprite": "sprite1", 
+      "x": 100, 
+      "y": 300, 
+      "dynamic": true,
+      "useKey": true, 
+      "key_map": {
+        "left": "move_func()"
+      }
+    }
+  ], 
+  "functions": [
+    {
+      "id": "move_func", 
+      "use_external": false, 
+      "src": "function move_func() {...}"
+    }
+  ]
+}

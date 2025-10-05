@@ -1,8 +1,10 @@
 package filemenu
 
 import (
+	"ember/engine"
 	"ember/helpers"
 	"errors"
+	"fmt"
 	"path/filepath"
 
 	"fyne.io/fyne/v2"
@@ -12,7 +14,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func projectSelectContainer(window fyne.Window, projectPath *string) *fyne.Container {
+func projectSelectContainer(window fyne.Window, projectPath *widget.Label, directWindow *dialog.CustomDialog, windowSidebar *widget.List) *fyne.Container {
 	var openButton = widget.NewButton("Open Existing", func() {
 		var folderDialog = dialog.NewFolderOpen(func(uri fyne.ListableURI, err error) {
 			if err != nil {
@@ -25,7 +27,17 @@ func projectSelectContainer(window fyne.Window, projectPath *string) *fyne.Conta
 					dialog.ShowError(err, window)
 					return
 				}
-				*projectPath = uri.Path()
+				projectPath.SetText(uri.Path())
+				var gameConfig, configErr = engine.LoadConfig(uri.Path())
+				if configErr != nil {
+					dialog.ShowError(fmt.Errorf("Unable to load the game configuration file! err: %s", configErr), window)
+					return
+				}
+
+				var newList []string
+				newList = append(newList, gameConfig.Title)
+				helpers.SetSidebarContent(windowSidebar, newList)
+
 			}
 		}, window)
 
@@ -77,8 +89,17 @@ func projectSelectContainer(window fyne.Window, projectPath *string) *fyne.Conta
 						return
 					}
 
-					*projectPath = filepath.Join(path, name)
+					projectPath.SetText(filepath.Join(path, name))
 					dialog.ShowInformation("Project info", "Project created successfully!", window)
+					var gameConfig, configErr = engine.LoadConfig(path)
+					if configErr != nil {
+						dialog.ShowError(fmt.Errorf("Unable to load the game configuration file! err: %s", configErr), window)
+						return
+					}
+
+					var newList []string
+					newList = append(newList, gameConfig.Title)
+
 				}
 			}, window)
 
