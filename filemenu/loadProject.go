@@ -14,7 +14,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func projectSelectContainer(window fyne.Window, projectPath *widget.Label, directWindow *dialog.CustomDialog, windowSidebar *widget.List) *fyne.Container {
+func projectSelectContainer(window fyne.Window, projectPath *widget.Label, directWindow *dialog.CustomDialog, config *engine.GameConfig, mainContentBlock *fyne.Container) *fyne.Container {
 	var openButton = widget.NewButton("Open Existing", func() {
 		var folderDialog = dialog.NewFolderOpen(func(uri fyne.ListableURI, err error) {
 			if err != nil {
@@ -27,17 +27,14 @@ func projectSelectContainer(window fyne.Window, projectPath *widget.Label, direc
 					dialog.ShowError(err, window)
 					return
 				}
-				projectPath.SetText(uri.Path())
-				var gameConfig, configErr = engine.LoadConfig(uri.Path())
-				if configErr != nil {
-					dialog.ShowError(fmt.Errorf("Unable to load the game configuration file! err: %s", configErr), window)
-					return
+				var conf, err = engine.LoadConfig(uri.Path())
+				if err != nil {
+					dialog.ShowError(fmt.Errorf("Unable to load game configuration! err: %s", err), window)
 				}
 
-				var newList []string
-				newList = append(newList, gameConfig.Title)
-				helpers.SetSidebarContent(windowSidebar, newList)
-
+				*config = conf
+				projectPath.SetText(uri.Path())
+				mainContentBlock.Objects[0].Refresh()
 			}
 		}, window)
 
@@ -57,6 +54,7 @@ func projectSelectContainer(window fyne.Window, projectPath *widget.Label, direc
 				if uri != nil {
 					newFolderEntry.SetText(uri.Path())
 				}
+
 			}, window)
 
 			folderDialog.Show()
@@ -84,22 +82,14 @@ func projectSelectContainer(window fyne.Window, projectPath *widget.Label, direc
 						return
 					}
 
-					if err := helpers.CreateProject(path, name); err != nil {
+					if err := helpers.CreateProject(path, name, config); err != nil {
 						dialog.ShowError(err, window)
 						return
 					}
 
 					projectPath.SetText(filepath.Join(path, name))
 					dialog.ShowInformation("Project info", "Project created successfully!", window)
-					var gameConfig, configErr = engine.LoadConfig(path)
-					if configErr != nil {
-						dialog.ShowError(fmt.Errorf("Unable to load the game configuration file! err: %s", configErr), window)
-						return
-					}
-
-					var newList []string
-					newList = append(newList, gameConfig.Title)
-
+					mainContentBlock.Refresh()
 				}
 			}, window)
 

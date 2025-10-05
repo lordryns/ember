@@ -2,9 +2,22 @@ package engine
 
 type GameConfig struct {
 	Title     string     `json:"title"`
+	Geometry  *Geometry  `json:"geometry"`
+	Mode      string     `json:"mode"`
+	Gravity   *Gravity   `json:"gravity"`
 	Sprites   []Sprite   `json:"sprites"`
 	Objects   []Object   `json:"objects"`
 	Functions []Function `json:"functions"`
+}
+
+type Geometry struct {
+	X int `json:"x"`
+	Y int `json:"y"`
+}
+
+type Gravity struct {
+	X int `json:"x"`
+	Y int `json:"y"`
 }
 
 type Sprite struct {

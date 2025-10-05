@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 )
 
-func CreateProject(path string, name string) error {
+func CreateProject(path string, name string, config *engine.GameConfig) error {
 	var fullPath = filepath.Join(path, name)
 
 	var _, statErr = os.Stat(fullPath)
@@ -21,7 +21,7 @@ func CreateProject(path string, name string) error {
 		return err
 	}
 
-	var config = engine.GameConfig{Title: name}
+	*config = engine.GameConfig{Title: name}
 	var configBytes, confErr = json.Marshal(config)
 	if confErr != nil {
 		return confErr

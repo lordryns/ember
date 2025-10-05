@@ -1,5 +1,8 @@
 {
-  "title": "Game Name", 
+  "title": "Game Name",
+  "geometry": {"x": 800, "y": 500},
+  "mode": "fit",
+  "gravity": {"x": 0, "y": 0},
   "sprites": [
     {
       "id": "sprite1", 
