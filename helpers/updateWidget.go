@@ -1,6 +1,8 @@
 package helpers
 
-import "fyne.io/fyne/v2/widget"
+import (
+	"fyne.io/fyne/v2/widget"
+)
 
 var SidebarItems = []string{"Defaults", "Sprites", "Object", "Functions", "Physics"}
 

@@ -14,7 +14,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func projectSelectContainer(window fyne.Window, projectPath *widget.Label, directWindow *dialog.CustomDialog, config *engine.GameConfig, mainContentBlock *fyne.Container) *fyne.Container {
+func projectSelectContainer(window fyne.Window, projectPath *widget.Label, directWindow *dialog.CustomDialog, config *engine.GameConfig, mainContentBlock *fyne.Container, refreshWindow func()) *fyne.Container {
 	var openButton = widget.NewButton("Open Existing", func() {
 		var folderDialog = dialog.NewFolderOpen(func(uri fyne.ListableURI, err error) {
 			if err != nil {
@@ -35,6 +35,7 @@ func projectSelectContainer(window fyne.Window, projectPath *widget.Label, direc
 				*config = conf
 				projectPath.SetText(uri.Path())
 				mainContentBlock.Objects[0].Refresh()
+				refreshWindow()
 			}
 		}, window)
 
@@ -90,6 +91,7 @@ func projectSelectContainer(window fyne.Window, projectPath *widget.Label, direc
 					projectPath.SetText(filepath.Join(path, name))
 					dialog.ShowInformation("Project info", "Project created successfully!", window)
 					mainContentBlock.Refresh()
+					refreshWindow()
 				}
 			}, window)
 
