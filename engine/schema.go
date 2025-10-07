@@ -1,49 +1,33 @@
 package engine
 
 type GameConfig struct {
-	Title     string     `json:"title"`
-	Geometry  *Geometry  `json:"geometry"`
-	Mode      string     `json:"mode"`
-	Gravity   *Gravity   `json:"gravity"`
-	Sprites   []Sprite   `json:"sprites"`
-	Objects   []Object   `json:"objects"`
-	Functions []Function `json:"functions"`
+	Title     string       `json:"title"`
+	Gravity   int          `json:"gravity"`
+	Objects   []GameObject `json:"objects"`
+	Functions []GameFunc   `json:"functions"`
 }
 
-type Geometry struct {
+type GameObject struct {
+	ID      string   `json:"id"`
+	Shape   string   `json:"shape"`
+	Pos     Position `json:"pos"`
+	Color   string   `json:"color"`
+	IsBody  bool     `json:"is_body"`
+	HasArea bool     `json:"has_area"`
+	KeyMap  []KeyMap `json:"key_map"`
+}
+
+type Position struct {
 	X int `json:"x"`
 	Y int `json:"y"`
 }
 
-type Gravity struct {
-	X int `json:"x"`
-	Y int `json:"y"`
+type KeyMap struct {
+	Key  string `json:"key"`
+	Func string `json:"func"`
 }
 
-type Sprite struct {
-	ID          string       `json:"id"`
-	Type        string       `json:"type"`
-	Path        string       `json:"path"`
-	Spritesheet *Spritesheet `json:"spritesheet"`
-}
-
-type Spritesheet struct {
-	X      int `json:"x"`
-	Y      int `json:"y"`
-	Frames int `json:"frames"`
-}
-
-type Object struct {
-	ID      string            `json:"id"`
-	Sprite  string            `json:"sprite"`
-	X       int               `json:"x"`
-	Y       int               `json:"y"`
-	Dynamic bool              `json:"dynamic"`
-	UseKey  bool              `json:"useKey"`
-	KeyMap  map[string]string `json:"key_map"`
-}
-
-type Function struct {
+type GameFunc struct {
 	ID          string `json:"id"`
 	UseExternal bool   `json:"use_external"`
 	Src         string `json:"src"`

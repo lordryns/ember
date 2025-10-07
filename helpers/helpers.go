@@ -21,7 +21,7 @@ func CreateProject(path string, name string, config *engine.GameConfig) error {
 		return err
 	}
 
-	*config = engine.GameConfig{Title: name}
+	config.Title = name
 	var configBytes, confErr = json.Marshal(config)
 	if confErr != nil {
 		return confErr

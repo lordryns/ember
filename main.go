@@ -4,10 +4,13 @@ import (
 	"ember/engine"
 	"ember/filemenu"
 	"ember/helpers"
+	"os"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -30,6 +33,30 @@ func main() {
 	window.ShowAndRun()
 }
 func toolBar(window fyne.Window, projectPath *widget.Label, mainContentBlock *fyne.Container) *fyne.Container {
+	var runButton = widget.NewButton("Run Game", func() {})
+
+	var saveButton = widget.NewButton("Save", func() {
+		var path = projectPath.Text
+		go func() {
+			var _, err = os.Stat(engine.PROJECT_PATH)
+			if !os.IsNotExist(err) {
+				fyne.Do(func() {
+					projectPath.SetText("Saved!")
+				})
+
+				time.Sleep(time.Second * 2)
+
+				fyne.Do(func() {
+					projectPath.SetText(path)
+				})
+
+			} else {
+				fyne.CurrentApp().SendNotification(fyne.NewNotification("Error", "You must open a project before you can save anything!"))
+			}
+		}()
+
+	})
+	saveButton.Importance = widget.HighImportance
 	var refreshButton = widget.NewButton("Refresh", func() {
 		setTabBasedOnId(currentTabID, mainContentBlock)
 	})
@@ -38,7 +65,7 @@ func toolBar(window fyne.Window, projectPath *widget.Label, mainContentBlock *fy
 			setTabBasedOnId(currentTabID, mainContentBlock)
 		})
 	})
-	return container.NewBorder(nil, nil, nil, container.NewHBox(refreshButton, fileButton), projectPath)
+	return container.NewBorder(nil, nil, nil, container.NewHBox(runButton, saveButton, refreshButton, fileButton), projectPath)
 }
 
 func setTabBasedOnId(id widget.ListItemID, mainContent *fyne.Container) {
@@ -78,10 +105,18 @@ func defaultContentTab(config *engine.GameConfig) *fyne.Container {
 	var titleLabel = widget.NewLabel("Game title: ")
 	var titleEntry = widget.NewEntry()
 	titleEntry.SetText(config.Title)
-	var titleButton = widget.NewButton("Update", func() {})
+	var titleContainer = container.NewBorder(nil, nil, titleLabel, nil, titleEntry)
 
-	var titleContainer = container.NewBorder(nil, nil, titleLabel, titleButton, titleEntry)
-	return container.NewVBox(titleContainer)
+	var geometryLabel = widget.NewLabel("Geometry: ")
+	var XEntry = widget.NewEntry()
+	XEntry.SetPlaceHolder("X")
+	XEntry.SetText("width()")
+	var YEntry = widget.NewEntry()
+	YEntry.SetText("height()")
+	YEntry.SetPlaceHolder("Y")
+
+	var geometryContainer = container.New(layout.NewGridLayout(3), geometryLabel, XEntry, YEntry)
+	return container.NewVBox(titleContainer, geometryContainer)
 }
 
 func spritesContentTab() *fyne.Container {
@@ -90,8 +125,16 @@ func spritesContentTab() *fyne.Container {
 }
 
 func objectContentTab() *fyne.Container {
-	var textLabel = widget.NewLabel("Object tab")
-	return container.NewHBox(textLabel)
+	var newObjectButton = widget.NewButton("New Object", func() {})
+	var objectList = widget.NewList(func() int { return len(engine.GAME_CONFIG.Objects) }, func() fyne.CanvasObject { return widget.NewLabel("") },
+		func(lii widget.ListItemID, co fyne.CanvasObject) {
+			co.(*widget.Label).SetText(engine.GAME_CONFIG.Objects[lii].ID)
+		})
+
+	var mainContent = container.NewVBox(container.NewCenter(newObjectButton))
+	var layoutSplit = container.NewHSplit(mainContent, objectList)
+	layoutSplit.SetOffset(0.8)
+	return container.New(layout.NewGridLayout(1), layoutSplit)
 }
 
 func functionContentTab() *fyne.Container {

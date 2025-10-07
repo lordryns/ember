@@ -1,27 +1,15 @@
 {
   "title": "Game Name",
-  "geometry": {"x": 800, "y": 500},
-  "mode": "fit",
-  "gravity": {"x": 0, "y": 0},
-  "sprites": [
-    {
-      "id": "sprite1", 
-      "type": "image/spritesheet",
-      "path": "path/to/image", 
-      "spritesheet": {"x": 128, "y": 128, "frames": 5}
-    }, 
-  ], 
+  "gravity": 200, 
   "objects": [
     {
-      "id": "player", 
-      "sprite": "sprite1", 
-      "x": 100, 
-      "y": 300, 
-      "dynamic": true,
-      "useKey": true, 
-      "key_map": {
-        "left": "move_func()"
-      }
+      "id": "player",
+      "shape": "rect", 
+      "pos": {"x": 100, "y": 100},
+      "color": "white",
+      "is_body": false, 
+      "has_area": false,
+      "key_map": [{"key": "left", "func": "move_func()"}]
     }
   ], 
   "functions": [

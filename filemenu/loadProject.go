@@ -33,8 +33,8 @@ func projectSelectContainer(window fyne.Window, projectPath *widget.Label, direc
 				}
 
 				*config = conf
-				projectPath.SetText(uri.Path())
-				mainContentBlock.Objects[0].Refresh()
+				engine.PROJECT_PATH = uri.Path()
+				projectPath.SetText(engine.PROJECT_PATH)
 				refreshWindow()
 			}
 		}, window)
@@ -88,7 +88,8 @@ func projectSelectContainer(window fyne.Window, projectPath *widget.Label, direc
 						return
 					}
 
-					projectPath.SetText(filepath.Join(path, name))
+					engine.PROJECT_PATH = filepath.Join(path, name)
+					projectPath.SetText(engine.PROJECT_PATH)
 					dialog.ShowInformation("Project info", "Project created successfully!", window)
 					mainContentBlock.Refresh()
 					refreshWindow()
