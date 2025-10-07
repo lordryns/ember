@@ -8,6 +8,10 @@ import (
 	"image/color"
 	"os"
 	"path/filepath"
+	"strconv"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/widget"
 )
 
 func CreateProject(path string, name string, config *engine.GameConfig) error {
@@ -57,4 +61,24 @@ func ColorToHex(c color.Color) string {
 	g8 := uint8(g >> 8)
 	b8 := uint8(b >> 8)
 	return fmt.Sprintf("#%02X%02X%02X", r8, g8, b8)
+}
+
+func CovertToInt(s string) int {
+	if num, err := strconv.ParseFloat(s, 64); err == nil {
+		return int(num)
+	}
+
+	return 0
+}
+
+// this is being used in main
+type RightClickLabel struct {
+	*widget.Label
+	OnRightClick func()
+}
+
+func (r *RightClickLabel) TappedSecondary(*fyne.PointEvent) {
+	if r.OnRightClick != nil {
+		r.OnRightClick()
+	}
 }

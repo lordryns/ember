@@ -4,8 +4,10 @@ import (
 	"ember/engine"
 	"ember/filemenu"
 	"ember/helpers"
+	"fmt"
 	"image/color"
 	"os"
+	"strconv"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -76,7 +78,7 @@ func setTabBasedOnId(id widget.ListItemID, mainContent *fyne.Container, window f
 	case 1:
 		mainContent.Objects = []fyne.CanvasObject{spritesContentTab()}
 	case 2:
-		mainContent.Objects = []fyne.CanvasObject{objectContentTab(window)}
+		mainContent.Objects = []fyne.CanvasObject{objectContentTab(mainContent, window)}
 	case 3:
 		mainContent.Objects = []fyne.CanvasObject{functionContentTab()}
 	case 4:
@@ -127,18 +129,26 @@ func spritesContentTab() *fyne.Container {
 	return container.NewHBox(textLabel)
 }
 
-func objectContentTab(window fyne.Window) *fyne.Container {
-	var newObjectButton = widget.NewButton("Set Object", func() {})
-	newObjectButton.Importance = widget.HighImportance
-	var objectList = widget.NewList(func() int { return len(engine.GAME_CONFIG.Objects) }, func() fyne.CanvasObject { return widget.NewLabel("") },
+func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyne.Container {
+	var objectList = widget.NewList(func() int { return len(engine.GAME_CONFIG.Objects) },
+		func() fyne.CanvasObject { return &helpers.RightClickLabel{Label: widget.NewLabel("")} },
 		func(lii widget.ListItemID, co fyne.CanvasObject) {
-			co.(*widget.Label).SetText(engine.GAME_CONFIG.Objects[lii].ID)
+			co.(*helpers.RightClickLabel).SetText(engine.GAME_CONFIG.Objects[lii].ID)
+			co.(*helpers.RightClickLabel).OnRightClick = func() {
+				dialog.NewConfirm("Delete Object?", fmt.Sprintf("Are you sure you want to delete the object '%v'?", engine.GAME_CONFIG.Objects[lii].ID), func(b bool) {
+					if b {
+						engine.GAME_CONFIG.Objects = append(engine.GAME_CONFIG.Objects[:lii], engine.GAME_CONFIG.Objects[lii+1:]...)
+						setTabBasedOnId(currentTabID, mainContentBlock, window)
+					}
+				}, window).Show()
+			}
 		})
 
 	var idEntry = widget.NewEntry()
 	idEntry.SetPlaceHolder("Enter ID")
 
-	var shapeSelect = widget.NewSelect([]string{"Choose shape", "Rect", "Circle"}, func(s string) {})
+	var shapeOptions = []string{"Choose shape", "Rect", "Circle"}
+	var shapeSelect = widget.NewSelect(shapeOptions, func(s string) {})
 	shapeSelect.SetSelected("Choose shape")
 	var idShapeRow = container.New(layout.NewGridLayout(2), idEntry, shapeSelect)
 
@@ -181,6 +191,72 @@ func objectContentTab(window fyne.Window) *fyne.Container {
 		keyMapDialog.Show()
 	})
 	var areaBodyKeymapRow = container.NewGridWithColumns(3, isBodyCheck, isAreaCheck, keyPressButton)
+
+	var newObjectButton = widget.NewButton("Set Object", func() {
+		var id = func() string {
+			if len(idEntry.Text) > 0 {
+				return idEntry.Text
+			}
+			return fmt.Sprintf("object_%v", len(engine.GAME_CONFIG.Objects))
+		}()
+		var shape = func() string {
+			if shapeSelect.Selected == shapeOptions[0] {
+				return shapeOptions[1]
+			}
+			return shapeSelect.Selected
+		}()
+
+		var pos = func() engine.Position {
+			return engine.Position{X: helpers.CovertToInt(XPosEntry.Text), Y: helpers.CovertToInt(YPosEntry.Text)}
+		}()
+
+		var color = func() string {
+			var t = colorEntry.Text
+			if len(t) > 0 {
+				return t
+			}
+
+			return "#ffffff"
+		}()
+
+		var size = func() engine.Size {
+			return engine.Size{X: helpers.CovertToInt(XSizeEntry.Text), Y: helpers.CovertToInt(YSizeEntry.Text)}
+		}()
+
+		var objects = engine.GAME_CONFIG.Objects
+		var object = engine.GameObject{ID: id, Shape: shape, Size: size, Pos: pos, Color: color, IsBody: isBodyCheck.Checked, HasArea: isAreaCheck.Checked}
+
+		var canUpdate bool = true
+		for i, obj := range objects {
+			if obj.ID == object.ID {
+				engine.GAME_CONFIG.Objects[i] = object
+
+				canUpdate = false
+				return
+			}
+		}
+
+		if canUpdate {
+			engine.GAME_CONFIG.Objects = append(engine.GAME_CONFIG.Objects, object)
+		}
+		setTabBasedOnId(currentTabID, mainContentBlock, window)
+
+	})
+	newObjectButton.Importance = widget.HighImportance
+
+	objectList.OnSelected = func(id widget.ListItemID) {
+		var c = engine.GAME_CONFIG.Objects[id]
+		idEntry.SetText(c.ID)
+		shapeSelect.SetSelected(c.Shape)
+		XPosEntry.SetText(strconv.Itoa(c.Pos.X))
+		YPosEntry.SetText(strconv.Itoa(c.Pos.Y))
+		XSizeEntry.SetText(strconv.Itoa(c.Size.X))
+		YSizeEntry.SetText(strconv.Itoa(c.Size.Y))
+		colorEntry.SetText(c.Color)
+		isBodyCheck.SetChecked(c.IsBody)
+		isAreaCheck.SetChecked(c.HasArea)
+	}
+
 	var mainContent = container.NewVBox(container.NewCenter(newObjectButton), idShapeRow, positionRow, sizeRow, colorRow, areaBodyKeymapRow)
 	var layoutSplit = container.NewHSplit(mainContent, objectList)
 	layoutSplit.SetOffset(0.8)
