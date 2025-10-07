@@ -131,7 +131,22 @@ func objectContentTab() *fyne.Container {
 			co.(*widget.Label).SetText(engine.GAME_CONFIG.Objects[lii].ID)
 		})
 
-	var mainContent = container.NewVBox(container.NewCenter(newObjectButton))
+	var idEntry = widget.NewEntry()
+	idEntry.SetPlaceHolder("Enter ID")
+
+	var shapeSelect = widget.NewSelect([]string{"Choose shape", "Rect", "Circle"}, func(s string) {})
+	shapeSelect.SetSelected("Choose shape")
+	var idShapeRow = container.New(layout.NewGridLayout(2), idEntry, shapeSelect)
+
+	var XPosEntry = widget.NewEntry()
+	XPosEntry.SetPlaceHolder("X")
+
+	var YPosEntry = widget.NewEntry()
+	YPosEntry.SetPlaceHolder("Y")
+
+	var positionRow = container.New(layout.NewGridLayout(3), widget.NewLabel("Position:"), XPosEntry, YPosEntry)
+
+	var mainContent = container.NewVBox(container.NewCenter(newObjectButton), idShapeRow, positionRow)
 	var layoutSplit = container.NewHSplit(mainContent, objectList)
 	layoutSplit.SetOffset(0.8)
 	return container.New(layout.NewGridLayout(1), layoutSplit)
