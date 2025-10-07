@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"image/color"
 	"os"
 	"path/filepath"
 )
@@ -47,4 +48,13 @@ func IsValidProject(path string) error {
 	}
 
 	return nil
+}
+
+// got this func from chatgpt, works okay so...yeah
+func ColorToHex(c color.Color) string {
+	r, g, b, _ := c.RGBA()
+	r8 := uint8(r >> 8)
+	g8 := uint8(g >> 8)
+	b8 := uint8(b >> 8)
+	return fmt.Sprintf("#%02X%02X%02X", r8, g8, b8)
 }

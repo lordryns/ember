@@ -4,14 +4,17 @@ import (
 	"ember/engine"
 	"ember/filemenu"
 	"ember/helpers"
+	"image/color"
 	"os"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
+	"github.com/lusingander/colorpicker"
 )
 
 var currentTabID int
@@ -58,22 +61,22 @@ func toolBar(window fyne.Window, projectPath *widget.Label, mainContentBlock *fy
 	})
 	saveButton.Importance = widget.HighImportance
 	var refreshButton = widget.NewButton("Refresh", func() {
-		setTabBasedOnId(currentTabID, mainContentBlock)
+		setTabBasedOnId(currentTabID, mainContentBlock, window)
 	})
 	var fileButton = widget.NewButton("File menu", func() {
 		filemenu.FileMenuWindow(window, projectPath, mainContentBlock, func() {
-			setTabBasedOnId(currentTabID, mainContentBlock)
+			setTabBasedOnId(currentTabID, mainContentBlock, window)
 		})
 	})
 	return container.NewBorder(nil, nil, nil, container.NewHBox(runButton, saveButton, refreshButton, fileButton), projectPath)
 }
 
-func setTabBasedOnId(id widget.ListItemID, mainContent *fyne.Container) {
+func setTabBasedOnId(id widget.ListItemID, mainContent *fyne.Container, window fyne.Window) {
 	switch id {
 	case 1:
 		mainContent.Objects = []fyne.CanvasObject{spritesContentTab()}
 	case 2:
-		mainContent.Objects = []fyne.CanvasObject{objectContentTab()}
+		mainContent.Objects = []fyne.CanvasObject{objectContentTab(window)}
 	case 3:
 		mainContent.Objects = []fyne.CanvasObject{functionContentTab()}
 	case 4:
@@ -93,7 +96,7 @@ func sideBar(window fyne.Window, mainContent *fyne.Container) *widget.List {
 		})
 
 	list.OnSelected = func(id widget.ListItemID) {
-		setTabBasedOnId(id, mainContent)
+		setTabBasedOnId(id, mainContent, window)
 	}
 
 	list.Select(0)
@@ -124,8 +127,9 @@ func spritesContentTab() *fyne.Container {
 	return container.NewHBox(textLabel)
 }
 
-func objectContentTab() *fyne.Container {
-	var newObjectButton = widget.NewButton("New Object", func() {})
+func objectContentTab(window fyne.Window) *fyne.Container {
+	var newObjectButton = widget.NewButton("Set Object", func() {})
+	newObjectButton.Importance = widget.HighImportance
 	var objectList = widget.NewList(func() int { return len(engine.GAME_CONFIG.Objects) }, func() fyne.CanvasObject { return widget.NewLabel("") },
 		func(lii widget.ListItemID, co fyne.CanvasObject) {
 			co.(*widget.Label).SetText(engine.GAME_CONFIG.Objects[lii].ID)
@@ -146,7 +150,38 @@ func objectContentTab() *fyne.Container {
 
 	var positionRow = container.New(layout.NewGridLayout(3), widget.NewLabel("Position:"), XPosEntry, YPosEntry)
 
-	var mainContent = container.NewVBox(container.NewCenter(newObjectButton), idShapeRow, positionRow)
+	var XSizeEntry = widget.NewEntry()
+	XSizeEntry.SetPlaceHolder("X")
+
+	var YSizeEntry = widget.NewEntry()
+	YSizeEntry.SetPlaceHolder("Y")
+
+	var sizeRow = container.New(layout.NewGridLayout(3), widget.NewLabel("Size:"), XSizeEntry, YSizeEntry)
+
+	var colorEntry = widget.NewEntry()
+	var colorPicker = colorpicker.New(200, colorpicker.StyleHue)
+	colorPicker.SetOnChanged(func(c color.Color) {
+		colorEntry.SetText(helpers.ColorToHex(c))
+	})
+	var colorButton = widget.NewButton("Set Color", func() {
+		dialog.NewCustom("Pick Color", "Dismiss", container.NewCenter(colorPicker), window).Show()
+	})
+
+	// just realised i could do this instead of the other method, crazy right?
+	var colorRow = container.NewGridWithColumns(3, widget.NewLabel("Set Color:"), colorEntry, colorButton)
+	var isBodyCheck = widget.NewCheck("Is Body", func(b bool) {})
+	var isAreaCheck = widget.NewCheck("Is Area", func(b bool) {})
+
+	var keyMapTopBar = container.NewBorder(nil, nil, nil, widget.NewButton("Add Key", func() {}))
+	var keyMapMainContent = container.NewCenter(widget.NewLabel("Nothing to see here..."))
+	var keyMapContainer = container.NewVBox(keyMapTopBar, keyMapMainContent)
+	var keyPressButton = widget.NewButton("Key map", func() {
+		var keyMapDialog = dialog.NewCustom("Key Map", "Close", keyMapContainer, window)
+		keyMapDialog.Resize(fyne.NewSize(400, 400))
+		keyMapDialog.Show()
+	})
+	var areaBodyKeymapRow = container.NewGridWithColumns(3, isBodyCheck, isAreaCheck, keyPressButton)
+	var mainContent = container.NewVBox(container.NewCenter(newObjectButton), idShapeRow, positionRow, sizeRow, colorRow, areaBodyKeymapRow)
 	var layoutSplit = container.NewHSplit(mainContent, objectList)
 	layoutSplit.SetOffset(0.8)
 	return container.New(layout.NewGridLayout(1), layoutSplit)
