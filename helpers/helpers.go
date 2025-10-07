@@ -73,10 +73,21 @@ func CovertToInt(s string) int {
 
 // this is being used in main
 type RightClickLabel struct {
-	*widget.Label
+	widget.Label
 	OnRightClick func()
 }
 
+func NewRightClickLabel(text string) *RightClickLabel {
+	r := &RightClickLabel{}
+	r.ExtendBaseWidget(r)
+	r.SetText(text)
+	return r
+}
+
+// Left click (List selection still works with this in place)
+func (r *RightClickLabel) Tapped(*fyne.PointEvent) {}
+
+// Right click
 func (r *RightClickLabel) TappedSecondary(*fyne.PointEvent) {
 	if r.OnRightClick != nil {
 		r.OnRightClick()

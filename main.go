@@ -131,17 +131,10 @@ func spritesContentTab() *fyne.Container {
 
 func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyne.Container {
 	var objectList = widget.NewList(func() int { return len(engine.GAME_CONFIG.Objects) },
-		func() fyne.CanvasObject { return &helpers.RightClickLabel{Label: widget.NewLabel("")} },
+		func() fyne.CanvasObject { return widget.NewLabel("") },
 		func(lii widget.ListItemID, co fyne.CanvasObject) {
-			co.(*helpers.RightClickLabel).SetText(engine.GAME_CONFIG.Objects[lii].ID)
-			co.(*helpers.RightClickLabel).OnRightClick = func() {
-				dialog.NewConfirm("Delete Object?", fmt.Sprintf("Are you sure you want to delete the object '%v'?", engine.GAME_CONFIG.Objects[lii].ID), func(b bool) {
-					if b {
-						engine.GAME_CONFIG.Objects = append(engine.GAME_CONFIG.Objects[:lii], engine.GAME_CONFIG.Objects[lii+1:]...)
-						setTabBasedOnId(currentTabID, mainContentBlock, window)
-					}
-				}, window).Show()
-			}
+			var r = co.(*widget.Label)
+			r.SetText(engine.GAME_CONFIG.Objects[lii].ID)
 		})
 
 	var idEntry = widget.NewEntry()
@@ -192,6 +185,18 @@ func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyn
 	})
 	var areaBodyKeymapRow = container.NewGridWithColumns(3, isBodyCheck, isAreaCheck, keyPressButton)
 
+	var currentObjectID int = -1
+	var deleteObjectButton = widget.NewButton("Delete", func() {
+
+		if currentObjectID > -1 {
+			dialog.NewConfirm("Delete Object?", fmt.Sprintf("Are you sure you want to delete the object '%v'?", engine.GAME_CONFIG.Objects[currentObjectID].ID), func(b bool) {
+				if b {
+					engine.GAME_CONFIG.Objects = append(engine.GAME_CONFIG.Objects[:currentObjectID], engine.GAME_CONFIG.Objects[currentObjectID+1:]...)
+					setTabBasedOnId(currentTabID, mainContentBlock, window)
+				}
+			}, window).Show()
+		}
+	})
 	var newObjectButton = widget.NewButton("Set Object", func() {
 		var id = func() string {
 			if len(idEntry.Text) > 0 {
@@ -245,6 +250,7 @@ func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyn
 	newObjectButton.Importance = widget.HighImportance
 
 	objectList.OnSelected = func(id widget.ListItemID) {
+		currentObjectID = id
 		var c = engine.GAME_CONFIG.Objects[id]
 		idEntry.SetText(c.ID)
 		shapeSelect.SetSelected(c.Shape)
@@ -257,7 +263,7 @@ func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyn
 		isAreaCheck.SetChecked(c.HasArea)
 	}
 
-	var mainContent = container.NewVBox(container.NewCenter(newObjectButton), idShapeRow, positionRow, sizeRow, colorRow, areaBodyKeymapRow)
+	var mainContent = container.NewVBox(container.NewCenter(container.NewHBox(newObjectButton, deleteObjectButton)), idShapeRow, positionRow, sizeRow, colorRow, areaBodyKeymapRow)
 	var layoutSplit = container.NewHSplit(mainContent, objectList)
 	layoutSplit.SetOffset(0.8)
 	return container.New(layout.NewGridLayout(1), layoutSplit)
