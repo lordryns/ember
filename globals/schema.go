@@ -8,14 +8,15 @@ type GameConfig struct {
 }
 
 type GameObject struct {
-	ID      string   `json:"id"`
-	Shape   string   `json:"shape"`
-	Pos     Position `json:"pos"`
-	Size    Size     `json:"size"`
-	Color   string   `json:"color"`
-	IsBody  bool     `json:"is_body"`
-	HasArea bool     `json:"has_area"`
-	KeyMap  []KeyMap `json:"key_map"`
+	ID       string   `json:"id"`
+	Shape    string   `json:"shape"`
+	Pos      Position `json:"pos"`
+	Size     Size     `json:"size"`
+	Color    string   `json:"color"`
+	IsBody   bool     `json:"is_body"`
+	HasArea  bool     `json:"has_area"`
+	IsStatic bool     `json:"is_static"`
+	KeyMap   []KeyMap `json:"key_map"`
 }
 
 type Position struct {

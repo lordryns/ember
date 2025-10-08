@@ -23,9 +23,10 @@ func GenerateSourceFromConfig(config *globals.GameConfig) (string, error) {
 </body>
 <script>
 	kaplay()
+	setGravity({{.Gravity}})
 
 	{{range .Objects}}
-	var {{.ID}} = add([rect({{.Size.X}}, {{.Size.Y}}), pos({{.Pos.X}}, {{.Pos.Y}}), color("{{.Color}}"), {{if .IsBody}}body(), {{end}} {{if .HasArea}}area(){{end}}]);
+		var {{.ID}} = add([rect({{.Size.X}}, {{.Size.Y}}), pos({{.Pos.X}}, {{.Pos.Y}}), color("{{.Color}}"), {{if .IsBody}}body({isStatic: {{.IsStatic}} }), {{end}} {{if .HasArea}}area(){{end}}]);
 	{{end}}
 </script>
 </html>

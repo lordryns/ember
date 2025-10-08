@@ -154,8 +154,23 @@ func defaultContentTab(config *globals.GameConfig) *fyne.Container {
 	YEntry.SetText("height()")
 	YEntry.SetPlaceHolder("Y")
 
+	var applyButton = widget.NewButton("", func() {})
+	applyButton = widget.NewButton("Apply", func() {
+		engine.GAME_CONFIG.Title = titleEntry.Text
+		go func() {
+			fyne.Do(func() {
+				applyButton.SetText("Applied!")
+			})
+
+			time.Sleep(time.Second * 2)
+			fyne.Do(func() {
+				applyButton.SetText("Apply")
+			})
+
+		}()
+	})
 	var geometryContainer = container.New(layout.NewGridLayout(3), geometryLabel, XEntry, YEntry)
-	return container.NewVBox(titleContainer, geometryContainer)
+	return container.NewVBox(titleContainer, geometryContainer, applyButton)
 }
 
 func spritesContentTab() *fyne.Container {
@@ -208,6 +223,7 @@ func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyn
 	var colorRow = container.NewGridWithColumns(3, widget.NewLabel("Set Color:"), colorEntry, colorButton)
 	var isBodyCheck = widget.NewCheck("Is Body", func(b bool) {})
 	var isAreaCheck = widget.NewCheck("Is Area", func(b bool) {})
+	var isStaticCheck = widget.NewCheck("Is Static", func(b bool) {})
 
 	var keyMapTopBar = container.NewBorder(nil, nil, nil, widget.NewButton("Add Key", func() {}))
 	var keyMapMainContent = container.NewCenter(widget.NewLabel("Nothing to see here..."))
@@ -217,7 +233,7 @@ func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyn
 		keyMapDialog.Resize(fyne.NewSize(400, 400))
 		keyMapDialog.Show()
 	})
-	var areaBodyKeymapRow = container.NewGridWithColumns(3, isBodyCheck, isAreaCheck, keyPressButton)
+	var areaBodyKeymapRow = container.NewGridWithColumns(4, isBodyCheck, isAreaCheck, isStaticCheck, keyPressButton)
 
 	var currentObjectID int = -1
 	var deleteObjectButton = widget.NewButton("Delete", func() {
@@ -263,7 +279,7 @@ func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyn
 		}()
 
 		var objects = engine.GAME_CONFIG.Objects
-		var object = globals.GameObject{ID: id, Shape: shape, Size: size, Pos: pos, Color: color, IsBody: isBodyCheck.Checked, HasArea: isAreaCheck.Checked}
+		var object = globals.GameObject{ID: id, Shape: shape, Size: size, Pos: pos, Color: color, IsBody: isBodyCheck.Checked, HasArea: isAreaCheck.Checked, IsStatic: isStaticCheck.Checked}
 
 		var canUpdate bool = true
 		for i, obj := range objects {
@@ -295,6 +311,7 @@ func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyn
 		colorEntry.SetText(c.Color)
 		isBodyCheck.SetChecked(c.IsBody)
 		isAreaCheck.SetChecked(c.HasArea)
+		isStaticCheck.SetChecked(c.IsStatic)
 	}
 
 	var mainContent = container.NewVBox(container.NewCenter(container.NewHBox(newObjectButton, deleteObjectButton)), idShapeRow, positionRow, sizeRow, colorRow, areaBodyKeymapRow)
@@ -309,6 +326,27 @@ func functionContentTab() *fyne.Container {
 }
 
 func PhysicsContentTab() *fyne.Container {
-	var textLabel = widget.NewLabel("Physics tab")
-	return container.NewHBox(textLabel)
+	var gravityLabel = widget.NewLabel("Gravity: ")
+	var gravityEntry = widget.NewEntry()
+	gravityEntry.SetText(strconv.Itoa(engine.GAME_CONFIG.Gravity))
+
+	var gravityContainer = container.NewBorder(nil, nil, gravityLabel, nil, gravityEntry)
+	var applyButton = widget.NewButton("", func() {})
+	applyButton = widget.NewButton("Apply", func() {
+
+		go func() {
+			engine.GAME_CONFIG.Gravity = helpers.CovertToInt(gravityEntry.Text)
+			fyne.Do(func() {
+				applyButton.SetText("Applied!")
+			})
+
+			time.Sleep(time.Second * 2)
+			fyne.Do(func() {
+				applyButton.SetText("Apply")
+			})
+
+		}()
+
+	})
+	return container.NewVBox(gravityContainer, applyButton)
 }

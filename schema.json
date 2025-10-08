@@ -9,6 +9,7 @@
       "color": "white",
       "is_body": true, 
       "has_area": true,
+      "is_static": false,
       "key_map": [{"key": "left", "func": "move_func()"}]
     }, 
   {
