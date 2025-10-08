@@ -1,7 +1,7 @@
 package helpers
 
 import (
-	"ember/engine"
+	"ember/globals"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,12 +9,9 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/widget"
 )
 
-func CreateProject(path string, name string, config *engine.GameConfig) error {
+func CreateProject(path string, name string, config *globals.GameConfig) error {
 	var fullPath = filepath.Join(path, name)
 
 	var _, statErr = os.Stat(fullPath)
@@ -54,6 +51,18 @@ func IsValidProject(path string) error {
 	return nil
 }
 
+func WriteStructToFile(path string, config *globals.GameConfig) error {
+	var fileBytes, err = json.Marshal(config)
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(path, fileBytes, os.ModePerm); err != nil {
+		return err
+	}
+	return nil
+}
+
 // got this func from chatgpt, works okay so...yeah
 func ColorToHex(c color.Color) string {
 	r, g, b, _ := c.RGBA()
@@ -69,27 +78,4 @@ func CovertToInt(s string) int {
 	}
 
 	return 0
-}
-
-// this is being used in main
-type RightClickLabel struct {
-	widget.Label
-	OnRightClick func()
-}
-
-func NewRightClickLabel(text string) *RightClickLabel {
-	r := &RightClickLabel{}
-	r.ExtendBaseWidget(r)
-	r.SetText(text)
-	return r
-}
-
-// Left click (List selection still works with this in place)
-func (r *RightClickLabel) Tapped(*fyne.PointEvent) {}
-
-// Right click
-func (r *RightClickLabel) TappedSecondary(*fyne.PointEvent) {
-	if r.OnRightClick != nil {
-		r.OnRightClick()
-	}
 }

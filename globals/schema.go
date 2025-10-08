@@ -1,4 +1,4 @@
-package engine
+package globals
 
 type GameConfig struct {
 	Title     string       `json:"title"`

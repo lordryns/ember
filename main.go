@@ -3,10 +3,12 @@ package main
 import (
 	"ember/engine"
 	"ember/filemenu"
+	"ember/globals"
 	"ember/helpers"
 	"fmt"
 	"image/color"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -38,7 +40,33 @@ func main() {
 	window.ShowAndRun()
 }
 func toolBar(window fyne.Window, projectPath *widget.Label, mainContentBlock *fyne.Container) *fyne.Container {
-	var runButton = widget.NewButton("Run Game", func() {})
+	var runButton = widget.NewButton("", func() {})
+	runButton = widget.NewButton("Run Game", func() {
+		var _, err = os.Stat(engine.PROJECT_PATH)
+		if !os.IsNotExist(err) {
+			go func() {
+				go func() {
+					if runButton.Text == "Run Game" {
+						if err := engine.StartDevEngine(&engine.GAME_CONFIG, runButton); err != nil {
+							fyne.CurrentApp().SendNotification(fyne.NewNotification("Error", fmt.Sprintf("Failed to run game! err: %v", err)))
+							return
+						}
+					} else {
+						engine.StopDevEngine(runButton)
+					}
+
+				}()
+
+				fyne.Do(func() {
+					projectPath.SetText(engine.PROJECT_PATH)
+				})
+
+			}()
+		} else {
+			fyne.CurrentApp().SendNotification(fyne.NewNotification("Error", "You must open a project before you can run anything!"))
+		}
+
+	})
 
 	var saveButton = widget.NewButton("Save", func() {
 		var path = projectPath.Text
@@ -46,7 +74,13 @@ func toolBar(window fyne.Window, projectPath *widget.Label, mainContentBlock *fy
 			var _, err = os.Stat(engine.PROJECT_PATH)
 			if !os.IsNotExist(err) {
 				fyne.Do(func() {
-					projectPath.SetText("Saved!")
+					if err := helpers.WriteStructToFile(filepath.Join(engine.PROJECT_PATH, "ember.json"), &engine.GAME_CONFIG); err != nil {
+						fyne.CurrentApp().SendNotification(fyne.NewNotification("Error", fmt.Sprintf("Unable to save to path! err: %v", err)))
+						return
+					} else {
+
+						projectPath.SetText("Saved!")
+					}
 				})
 
 				time.Sleep(time.Second * 2)
@@ -106,7 +140,7 @@ func sideBar(window fyne.Window, mainContent *fyne.Container) *widget.List {
 	return list
 }
 
-func defaultContentTab(config *engine.GameConfig) *fyne.Container {
+func defaultContentTab(config *globals.GameConfig) *fyne.Container {
 	var titleLabel = widget.NewLabel("Game title: ")
 	var titleEntry = widget.NewEntry()
 	titleEntry.SetText(config.Title)
@@ -211,8 +245,8 @@ func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyn
 			return shapeSelect.Selected
 		}()
 
-		var pos = func() engine.Position {
-			return engine.Position{X: helpers.CovertToInt(XPosEntry.Text), Y: helpers.CovertToInt(YPosEntry.Text)}
+		var pos = func() globals.Position {
+			return globals.Position{X: helpers.CovertToInt(XPosEntry.Text), Y: helpers.CovertToInt(YPosEntry.Text)}
 		}()
 
 		var color = func() string {
@@ -224,12 +258,12 @@ func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyn
 			return "#ffffff"
 		}()
 
-		var size = func() engine.Size {
-			return engine.Size{X: helpers.CovertToInt(XSizeEntry.Text), Y: helpers.CovertToInt(YSizeEntry.Text)}
+		var size = func() globals.Size {
+			return globals.Size{X: helpers.CovertToInt(XSizeEntry.Text), Y: helpers.CovertToInt(YSizeEntry.Text)}
 		}()
 
 		var objects = engine.GAME_CONFIG.Objects
-		var object = engine.GameObject{ID: id, Shape: shape, Size: size, Pos: pos, Color: color, IsBody: isBodyCheck.Checked, HasArea: isAreaCheck.Checked}
+		var object = globals.GameObject{ID: id, Shape: shape, Size: size, Pos: pos, Color: color, IsBody: isBodyCheck.Checked, HasArea: isAreaCheck.Checked}
 
 		var canUpdate bool = true
 		for i, obj := range objects {

@@ -2,6 +2,7 @@ package filemenu
 
 import (
 	"ember/engine"
+	"ember/globals"
 	"ember/helpers"
 	"errors"
 	"fmt"
@@ -14,7 +15,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func projectSelectContainer(window fyne.Window, projectPath *widget.Label, directWindow *dialog.CustomDialog, config *engine.GameConfig, mainContentBlock *fyne.Container, refreshWindow func()) *fyne.Container {
+func projectSelectContainer(window fyne.Window, projectPath *widget.Label, directWindow *dialog.CustomDialog, config *globals.GameConfig, mainContentBlock *fyne.Container, refreshWindow func()) *fyne.Container {
 	var openButton = widget.NewButton("Open Existing", func() {
 		var folderDialog = dialog.NewFolderOpen(func(uri fyne.ListableURI, err error) {
 			if err != nil {
