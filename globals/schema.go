@@ -2,6 +2,7 @@ package globals
 
 type GameConfig struct {
 	Title     string       `json:"title"`
+	Color     string       `json:"color"`
 	Gravity   int          `json:"gravity"`
 	Objects   []GameObject `json:"objects"`
 	Functions []GameFunc   `json:"functions"`

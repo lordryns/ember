@@ -39,6 +39,25 @@ func main() {
 	window.SetContent(rootContent)
 	window.ShowAndRun()
 }
+
+func keyMapListContainer(obi int) *widget.List {
+	var items = engine.GAME_CONFIG.Objects[obi].KeyMap
+	var list = widget.NewList(
+		func() int { return len(items) },
+		func() fyne.CanvasObject {
+			return widget.NewButton("", nil)
+		},
+		func(i widget.ListItemID, o fyne.CanvasObject) {
+			b := o.(*widget.Button)
+			b.SetText(items[i].Key)
+			b.OnTapped = func() {
+				fmt.Println("Clicked:", items[i])
+			}
+		},
+	)
+
+	return list
+}
 func toolBar(window fyne.Window, projectPath *widget.Label, mainContentBlock *fyne.Container) *fyne.Container {
 	var runButton = widget.NewButton("", func() {})
 	runButton = widget.NewButton("Run Game", func() {
@@ -118,7 +137,7 @@ func setTabBasedOnId(id widget.ListItemID, mainContent *fyne.Container, window f
 	case 4:
 		mainContent.Objects = []fyne.CanvasObject{PhysicsContentTab()}
 	default:
-		mainContent.Objects = []fyne.CanvasObject{defaultContentTab(&engine.GAME_CONFIG)}
+		mainContent.Objects = []fyne.CanvasObject{defaultContentTab(window, &engine.GAME_CONFIG)}
 	}
 
 	currentTabID = id
@@ -140,7 +159,7 @@ func sideBar(window fyne.Window, mainContent *fyne.Container) *widget.List {
 	return list
 }
 
-func defaultContentTab(config *globals.GameConfig) *fyne.Container {
+func defaultContentTab(window fyne.Window, config *globals.GameConfig) *fyne.Container {
 	var titleLabel = widget.NewLabel("Game title: ")
 	var titleEntry = widget.NewEntry()
 	titleEntry.SetText(config.Title)
@@ -154,9 +173,24 @@ func defaultContentTab(config *globals.GameConfig) *fyne.Container {
 	YEntry.SetText("height()")
 	YEntry.SetPlaceHolder("Y")
 
+	var backgroundEntry = widget.NewEntry()
+	backgroundEntry.SetPlaceHolder("Set background color")
+	backgroundEntry.SetText(engine.GAME_CONFIG.Color)
+	var colorPicker = colorpicker.New(200, colorpicker.StyleHue)
+	colorPicker.SetOnChanged(func(c color.Color) {
+		backgroundEntry.SetText(helpers.ColorToHex(c))
+	})
+
+	var backgroundButton = widget.NewButton("Set Color", func() {
+		dialog.NewCustom("Pick Color", "Dismiss", container.NewCenter(colorPicker), window).Show()
+	})
+
+	var backgroundContainer = container.NewGridWithColumns(3, widget.NewLabel("Background color:"), backgroundEntry, backgroundButton)
+	//container.NewBorder(nil, nil, widget.NewLabel("Background color:"), backgroundButton, backgroundEntry)
 	var applyButton = widget.NewButton("", func() {})
 	applyButton = widget.NewButton("Apply", func() {
 		engine.GAME_CONFIG.Title = titleEntry.Text
+		engine.GAME_CONFIG.Color = backgroundEntry.Text
 		go func() {
 			fyne.Do(func() {
 				applyButton.SetText("Applied!")
@@ -170,7 +204,7 @@ func defaultContentTab(config *globals.GameConfig) *fyne.Container {
 		}()
 	})
 	var geometryContainer = container.New(layout.NewGridLayout(3), geometryLabel, XEntry, YEntry)
-	return container.NewVBox(titleContainer, geometryContainer, applyButton)
+	return container.NewVBox(titleContainer, geometryContainer, backgroundContainer, applyButton)
 }
 
 func spritesContentTab() *fyne.Container {
@@ -179,6 +213,8 @@ func spritesContentTab() *fyne.Container {
 }
 
 func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyne.Container {
+	var currentObjectID int = -1
+
 	var objectList = widget.NewList(func() int { return len(engine.GAME_CONFIG.Objects) },
 		func() fyne.CanvasObject { return widget.NewLabel("") },
 		func(lii widget.ListItemID, co fyne.CanvasObject) {
@@ -225,8 +261,20 @@ func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyn
 	var isAreaCheck = widget.NewCheck("Is Area", func(b bool) {})
 	var isStaticCheck = widget.NewCheck("Is Static", func(b bool) {})
 
-	var keyMapTopBar = container.NewBorder(nil, nil, nil, widget.NewButton("Add Key", func() {}))
-	var keyMapMainContent = container.NewCenter(widget.NewLabel("Nothing to see here..."))
+	var keyMapTopBar = container.NewBorder(nil, nil, nil, widget.NewButton("Add Key", func() {
+		dialog.NewCustomConfirm("Add Key", "Add", "Dismiss", container.NewCenter(widget.NewLabel("")), func(b bool) {}, window).Show()
+	}))
+	var keyMapMainContent = container.NewCenter(func() fyne.CanvasObject {
+		if currentObjectID > -1 {
+			if len(engine.GAME_CONFIG.Objects[currentObjectID].KeyMap) > 0 {
+				return container.NewCenter(keyMapListContainer(currentObjectID))
+			} else {
+				return container.NewCenter(widget.NewLabel("Nothing to see here..."))
+			}
+		} else {
+			return container.NewCenter(widget.NewLabel("Nothing to see here..."))
+		}
+	}())
 	var keyMapContainer = container.NewVBox(keyMapTopBar, keyMapMainContent)
 	var keyPressButton = widget.NewButton("Key map", func() {
 		var keyMapDialog = dialog.NewCustom("Key Map", "Close", keyMapContainer, window)
@@ -239,7 +287,6 @@ func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyn
 
 	var areaBodyKeymapRow = container.NewGridWithColumns(4, isBodyCheck, isAreaCheck, isStaticCheck, keyPressButton)
 
-	var currentObjectID int = -1
 	var deleteObjectButton = widget.NewButton("Delete", func() {
 
 		if currentObjectID > -1 {

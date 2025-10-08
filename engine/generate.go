@@ -23,7 +23,9 @@ func GenerateSourceFromConfig(config *globals.GameConfig) (string, error) {
 <script src="game.js"></script>
 </body>
 <script>
-	kaplay()
+	kaplay({ 
+		{{if .Color }} background: "{{.Color}}", {{end}}
+		});
 	setGravity({{.Gravity}})
 
 	{{range .Objects}}
