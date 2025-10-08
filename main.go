@@ -99,7 +99,7 @@ func toolBar(window fyne.Window, projectPath *widget.Label, mainContentBlock *fy
 	var refreshButton = widget.NewButton("Refresh", func() {
 		setTabBasedOnId(currentTabID, mainContentBlock, window)
 	})
-	var fileButton = widget.NewButton("File menu", func() {
+	var fileButton = widget.NewButton("Project menu", func() {
 		filemenu.FileMenuWindow(window, projectPath, mainContentBlock, func() {
 			setTabBasedOnId(currentTabID, mainContentBlock, window)
 		})

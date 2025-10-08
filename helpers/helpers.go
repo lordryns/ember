@@ -63,6 +63,14 @@ func WriteStructToFile(path string, config *globals.GameConfig) error {
 	return nil
 }
 
+func ValidatePort(port string) int {
+	var c = CovertToInt(port)
+	if c > 0 {
+		return c
+	}
+	return 8080
+}
+
 // got this func from chatgpt, works okay so...yeah
 func ColorToHex(c color.Color) string {
 	r, g, b, _ := c.RGBA()

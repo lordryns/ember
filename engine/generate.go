@@ -16,7 +16,7 @@ func GenerateSourceFromConfig(config *globals.GameConfig) (string, error) {
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Good game</title>
+	<title>{{.Title}}</title>
 </head>
 <body>
 <script src="https://unpkg.com/kaplay@3001.0.19/dist/kaplay.js"></script>

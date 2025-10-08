@@ -10,6 +10,7 @@ import (
 )
 
 var SERVER *http.Server
+var PORT = 8080
 
 func StartDevEngine(config *globals.GameConfig, runButton *widget.Button) error {
 	var mux = http.NewServeMux()
@@ -27,7 +28,7 @@ func StartDevEngine(config *globals.GameConfig, runButton *widget.Button) error 
 		fmt.Fprint(w, res)
 	})
 
-	SERVER = &http.Server{Addr: ":8080", Handler: mux}
+	SERVER = &http.Server{Addr: fmt.Sprintf(":%v", PORT), Handler: mux}
 	go func() error {
 		if err := SERVER.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			return err
@@ -37,7 +38,7 @@ func StartDevEngine(config *globals.GameConfig, runButton *widget.Button) error 
 	}()
 
 	fyne.Do(func() {
-		fyne.CurrentApp().SendNotification(fyne.NewNotification("New Process", "Game is running, visit http:/127.0.0.1:8080"))
+		fyne.CurrentApp().SendNotification(fyne.NewNotification("New Process", fmt.Sprintf("Game is running, visit http:/127.0.0.1:%v", PORT)))
 		runButton.SetText("Stop")
 	})
 
@@ -51,3 +52,4 @@ func StopDevEngine(runButton *widget.Button) {
 		runButton.SetText("Run Game")
 	})
 }
+
