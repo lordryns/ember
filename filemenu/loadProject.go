@@ -89,6 +89,7 @@ func projectSelectContainer(window fyne.Window, projectPath *widget.Label, direc
 						return
 					}
 
+					engine.GAME_CONFIG = globals.GameConfig{}
 					engine.PROJECT_PATH = filepath.Join(path, name)
 					projectPath.SetText(engine.PROJECT_PATH)
 					dialog.ShowInformation("Project info", "Project created successfully!", window)

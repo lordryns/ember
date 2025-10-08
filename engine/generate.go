@@ -3,6 +3,7 @@ package engine
 import (
 	"bytes"
 	"ember/globals"
+	"fmt"
 	"os"
 	"path/filepath"
 	"text/template"
@@ -27,7 +28,8 @@ func GenerateSourceFromConfig(config *globals.GameConfig) (string, error) {
 
 	{{range .Objects}}
 		var {{.ID}} = add([rect({{.Size.X}}, {{.Size.Y}}), pos({{.Pos.X}}, {{.Pos.Y}}), color("{{.Color}}"), {{if .IsBody}}body({isStatic: {{.IsStatic}} }), {{end}} {{if .HasArea}}area(){{end}}]);
-	{{end}}
+		{{.ID}}.gravityScale = {{.Weight}};
+		{{end}}
 </script>
 </html>
 `
@@ -40,6 +42,7 @@ func GenerateSourceFromConfig(config *globals.GameConfig) (string, error) {
 	var buf bytes.Buffer
 	tmpl.Execute(&buf, config)
 
+	fmt.Println(buf.String())
 	return buf.String(), nil
 }
 

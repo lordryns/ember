@@ -7,21 +7,13 @@
       "shape": "rect", 
       "pos": {"x": 100, "y": 100},
       "color": "white",
+      "weight": 2;
       "is_body": true, 
       "has_area": true,
       "is_static": false,
       "key_map": [{"key": "left", "func": "move_func()"}]
     }, 
-  {
-      "id": "enemy",
-      "size": {"x": 70, "y": 70},
-      "shape": "rect", 
-      "pos": {"x": 400, "y": 100},
-      "color": "#0000000",
-      "is_body": true, 
-      "has_area": false,
-      "key_map": [{"key": "left", "func": "move_func()"}]
-    }
+  
   ], 
   "functions": [
     {

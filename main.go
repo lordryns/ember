@@ -233,6 +233,10 @@ func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyn
 		keyMapDialog.Resize(fyne.NewSize(400, 400))
 		keyMapDialog.Show()
 	})
+
+	var weightEntry = widget.NewEntry()
+	weightEntry.SetPlaceHolder("Set Object Weight")
+
 	var areaBodyKeymapRow = container.NewGridWithColumns(4, isBodyCheck, isAreaCheck, isStaticCheck, keyPressButton)
 
 	var currentObjectID int = -1
@@ -278,8 +282,13 @@ func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyn
 			return globals.Size{X: helpers.CovertToInt(XSizeEntry.Text), Y: helpers.CovertToInt(YSizeEntry.Text)}
 		}()
 
+		var weight = func() int {
+			return helpers.CovertToInt(weightEntry.Text)
+		}()
+
 		var objects = engine.GAME_CONFIG.Objects
-		var object = globals.GameObject{ID: id, Shape: shape, Size: size, Pos: pos, Color: color, IsBody: isBodyCheck.Checked, HasArea: isAreaCheck.Checked, IsStatic: isStaticCheck.Checked}
+		var object = globals.GameObject{ID: id, Shape: shape, Size: size,
+			Pos: pos, Color: color, IsBody: isBodyCheck.Checked, HasArea: isAreaCheck.Checked, IsStatic: isStaticCheck.Checked, Weight: weight}
 
 		var canUpdate bool = true
 		for i, obj := range objects {
@@ -312,9 +321,10 @@ func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyn
 		isBodyCheck.SetChecked(c.IsBody)
 		isAreaCheck.SetChecked(c.HasArea)
 		isStaticCheck.SetChecked(c.IsStatic)
+		weightEntry.SetText(strconv.Itoa(c.Weight))
 	}
 
-	var mainContent = container.NewVBox(container.NewCenter(container.NewHBox(newObjectButton, deleteObjectButton)), idShapeRow, positionRow, sizeRow, colorRow, areaBodyKeymapRow)
+	var mainContent = container.NewVBox(container.NewCenter(container.NewHBox(newObjectButton, deleteObjectButton)), idShapeRow, positionRow, sizeRow, colorRow, areaBodyKeymapRow, weightEntry)
 	var layoutSplit = container.NewHSplit(mainContent, objectList)
 	layoutSplit.SetOffset(0.8)
 	return container.New(layout.NewGridLayout(1), layoutSplit)

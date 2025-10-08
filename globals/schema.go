@@ -12,6 +12,7 @@ type GameObject struct {
 	Shape    string   `json:"shape"`
 	Pos      Position `json:"pos"`
 	Size     Size     `json:"size"`
+	Weight   int      `json:"weight"`
 	Color    string   `json:"color"`
 	IsBody   bool     `json:"is_body"`
 	HasArea  bool     `json:"has_area"`
