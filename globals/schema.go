@@ -35,7 +35,12 @@ type KeyMap struct {
 }
 
 type GameFunc struct {
-	ID          string `json:"id"`
-	UseExternal bool   `json:"use_external"`
-	Src         string `json:"src"`
+	ID   string `json:"id"`
+	Args []Arg  `json:"args"`
+	Src  string `json:"src"`
+}
+
+type Arg struct {
+	ID   string `json:"id"`
+	Type string `json:"type"`
 }

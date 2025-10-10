@@ -18,8 +18,8 @@
   "functions": [
     {
       "id": "move_func", 
-      "use_external": false, 
-      "src": "function move_func() {...}"
+      "args": [], 
+      "src": ""
     }
   ]
 }

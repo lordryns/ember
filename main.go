@@ -9,6 +9,7 @@ import (
 	"image/color"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"time"
 
@@ -133,7 +134,7 @@ func setTabBasedOnId(id widget.ListItemID, mainContent *fyne.Container, window f
 	case 2:
 		mainContent.Objects = []fyne.CanvasObject{objectContentTab(mainContent, window)}
 	case 3:
-		mainContent.Objects = []fyne.CanvasObject{functionContentTab()}
+		mainContent.Objects = []fyne.CanvasObject{functionContentTab(window)}
 	case 4:
 		mainContent.Objects = []fyne.CanvasObject{PhysicsContentTab()}
 	default:
@@ -301,7 +302,7 @@ func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyn
 	var newObjectButton = widget.NewButton("Set Object", func() {
 		var id = func() string {
 			if len(idEntry.Text) > 0 {
-				return idEntry.Text
+				return helpers.RemoveWhiteSpaceAndIllegals(idEntry.Text)
 			}
 			return fmt.Sprintf("object_%v", len(engine.GAME_CONFIG.Objects))
 		}()
@@ -377,9 +378,178 @@ func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyn
 	return container.New(layout.NewGridLayout(1), layoutSplit)
 }
 
-func functionContentTab() *fyne.Container {
-	var textLabel = widget.NewLabel("Function tab")
-	return container.NewHBox(textLabel)
+func AddFunctionDialog(window fyne.Window, tType *string, functionsList *widget.List, func_name string, func_args []globals.Arg, func_src string) {
+	var tempArgListID int = -1
+	var tempArgList = func_args
+	var tempCode = func_src
+
+	var addFuncIDEntry = widget.NewEntry()
+	addFuncIDEntry.SetPlaceHolder("ID...")
+	addFuncIDEntry.SetText(func_name)
+
+	var addFuncIdContainer = container.NewBorder(nil, nil, widget.NewLabel("Enter ID: "), nil, addFuncIDEntry)
+
+	var argFuncLabel = widget.NewLabel("Arg:")
+	var addFuncArgsEntry = widget.NewEntry()
+	addFuncArgsEntry.SetPlaceHolder("Args...")
+
+	var addFuncArgButton = widget.NewButton("Add Arg", func() {
+		var t = addFuncArgsEntry.Text
+		if len(t) > 0 {
+			var temp = helpers.RemoveWhiteSpaceAndIllegals(t)
+			var getArgID = func() []string {
+				var l []string
+				for _, te := range tempArgList {
+					l = append(l, te.ID)
+				}
+
+				return l
+			}
+			if slices.Contains(getArgID(), temp) {
+				dialog.ShowError(fmt.Errorf("Argument '%v' already exists in this function!", temp), window)
+				return
+			}
+
+			var tEntry = widget.NewSelect(engine.CUSTOM_TYPES, func(s string) {
+				*tType = s
+			})
+			tEntry.SetSelectedIndex(0)
+			var tc = dialog.NewCustomConfirm("Set Type", "Set Type", "Cancel", tEntry, func(b bool) {
+				if b {
+					tempArgList = append(tempArgList, globals.Arg{ID: temp, Type: *tType})
+					argFuncLabel.SetText(fmt.Sprintf("Arg(%v):", len(tempArgList)))
+					addFuncArgsEntry.SetText("")
+
+				}
+
+			}, window)
+			tc.Show()
+		}
+	})
+	var showFuncArgButton = widget.NewButton("Show Args", func() {
+		var list = widget.NewList(func() int { return len(tempArgList) }, func() fyne.CanvasObject { return widget.NewLabel("") }, func(lii widget.ListItemID, co fyne.CanvasObject) {
+			// thanks gpt bro for this snippet
+			idx := len(tempArgList) - 1 - lii
+			cur := tempArgList[idx]
+			co.(*widget.Label).SetText(fmt.Sprintf("%v:%v", cur.ID, cur.Type))
+		})
+
+		list.OnSelected = func(id widget.ListItemID) {
+			tempArgListID = id
+		}
+
+		var deleteButton = widget.NewButton("Delete", func() {
+			if tempArgListID > -1 && len(tempArgList) > 0 {
+				tempArgList = append(tempArgList[:tempArgListID], tempArgList[tempArgListID+1:]...)
+				tempArgListID = -1
+				list.Refresh()
+			}
+		})
+		var d = dialog.NewCustom("Arguments", "Close", container.NewBorder(container.NewVBox(deleteButton), nil, nil, nil, list), window)
+		d.Resize(fyne.NewSize(200, 300))
+		d.Show()
+	})
+	var addFuncArgsContainer = container.NewBorder(nil, nil, argFuncLabel, container.NewHBox(addFuncArgButton, showFuncArgButton), addFuncArgsEntry)
+
+	var addSrcButton = widget.NewButton("Source Code", func() {
+		var editor = widget.NewMultiLineEntry()
+		var template string
+		for _, arg := range tempArgList {
+			template += fmt.Sprintf("let  _%v = %v; // type: %v\n", arg.ID, arg.ID, arg.Type)
+		}
+		if len(tempCode) < 1 {
+			editor.SetText(template)
+		} else {
+			editor.SetText(tempCode)
+		}
+		var d = dialog.NewCustomConfirm("Function Code", "Add", "Dismiss", editor, func(b bool) {
+			if b {
+				tempCode = editor.Text
+			}
+		}, window)
+		d.Resize(fyne.NewSize(400, 400))
+		d.Show()
+	})
+
+	var d = dialog.NewCustomConfirm("New Function", "Add Function", "Cancel", container.NewVBox(addFuncIdContainer, addFuncArgsContainer, addSrcButton), func(b bool) {
+		if b {
+			var parseFunc = func() string {
+				var t = addFuncIDEntry.Text
+				if len(t) < 1 {
+					return fmt.Sprintf("func_%v", len(engine.GAME_CONFIG.Functions))
+				}
+				return helpers.RemoveWhiteSpaceAndIllegals(t)
+			}
+			var newFunc = globals.GameFunc{ID: parseFunc(), Args: tempArgList, Src: tempCode}
+			var checkIfIDAlreadyExists = func() (bool, int) {
+				for i, fn := range engine.GAME_CONFIG.Functions {
+					if fn.ID == newFunc.ID {
+						return true, i
+					}
+
+				}
+
+				return false, -1
+			}
+
+			var exists, index = checkIfIDAlreadyExists()
+			if !exists {
+				engine.GAME_CONFIG.Functions = append(engine.GAME_CONFIG.Functions, newFunc)
+			} else {
+				engine.GAME_CONFIG.Functions[index] = newFunc
+			}
+			functionsList.Refresh()
+		}
+		tempArgList = []globals.Arg{}
+		argFuncLabel.SetText("Arg:")
+	}, window)
+	d.Resize(fyne.NewSize(400, 200))
+	d.Show()
+
+}
+
+func functionContentTab(window fyne.Window) *fyne.Container {
+	var tType string
+	var functionsList *widget.List
+	var currentFuncID = -1
+
+	functionsList = widget.NewList(func() int { return len(engine.GAME_CONFIG.Functions) }, func() fyne.CanvasObject { return helpers.NewClickableLabel("", func() {}) }, func(lii widget.ListItemID, co fyne.CanvasObject) {
+		var e = engine.GAME_CONFIG.Functions[lii]
+		var b = co.(*helpers.ClickableLabel)
+
+		// Style for selection
+		if lii == currentFuncID {
+			b.TextStyle = fyne.TextStyle{Bold: true}
+
+			b.SetText(fmt.Sprintf("+ %v:		%v", e.ID, e.Args))
+		} else {
+			b.TextStyle = fyne.TextStyle{}
+
+			b.SetText(fmt.Sprintf("%v:		%v", e.ID, e.Args))
+		}
+		b.Refresh()
+
+		b.OnTapped = func() {
+			currentFuncID = lii
+			functionsList.Refresh()
+			AddFunctionDialog(window, &tType, functionsList, e.ID, e.Args, e.Src)
+		}
+	})
+
+	var addFuncButton = widget.NewButton("Open Menu", func() {
+		dialog.ShowCustom("Function Menu", "Close", container.NewHBox(widget.NewButton("Add Function", func() {
+			AddFunctionDialog(window, &tType, functionsList, "", []globals.Arg{}, "")
+		}), widget.NewButton("Delete Function", func() {
+			if currentFuncID > -1 {
+				engine.GAME_CONFIG.Functions = append(engine.GAME_CONFIG.Functions[:currentFuncID], engine.GAME_CONFIG.Functions[currentFuncID+1:]...)
+				functionsList.Refresh()
+			}
+		})), window)
+	})
+	addFuncButton.Importance = widget.HighImportance
+
+	var mainContainer = container.NewBorder(container.NewCenter(addFuncButton), nil, nil, nil, functionsList)
+	return mainContainer
 }
 
 func PhysicsContentTab() *fyne.Container {

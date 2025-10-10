@@ -9,6 +9,10 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/widget"
 )
 
 func CreateProject(path string, name string, config *globals.GameConfig) error {
@@ -71,6 +75,11 @@ func ValidatePort(port string) int {
 	return 8080
 }
 
+func RemoveWhiteSpaceAndIllegals(t string) string {
+	var nt = strings.ReplaceAll(t, " ", "")
+	return nt
+}
+
 // got this func from chatgpt, works okay so...yeah
 func ColorToHex(c color.Color) string {
 	r, g, b, _ := c.RGBA()
@@ -86,4 +95,24 @@ func CovertToInt(s string) int {
 	}
 
 	return 0
+}
+
+// also from gpt
+type ClickableLabel struct {
+	*widget.Label
+	OnTapped func()
+}
+
+func NewClickableLabel(text string, tapped func()) *ClickableLabel {
+	l := &ClickableLabel{
+		Label:    widget.NewLabel(text),
+		OnTapped: tapped,
+	}
+	return l
+}
+
+func (c *ClickableLabel) Tapped(_ *fyne.PointEvent) {
+	if c.OnTapped != nil {
+		c.OnTapped()
+	}
 }
