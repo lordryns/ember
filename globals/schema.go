@@ -6,6 +6,7 @@ type GameConfig struct {
 	Gravity   int          `json:"gravity"`
 	Objects   []GameObject `json:"objects"`
 	Functions []GameFunc   `json:"functions"`
+	Update    []GameFunc   `json:"update"`
 }
 
 type GameObject struct {
@@ -30,8 +31,9 @@ type Size struct {
 	Y int `json:"y"`
 }
 type KeyMap struct {
-	Key  string   `json:"key"`
-	Func GameFunc `json:"func"`
+	Key       string   `json:"key"`
+	Func      GameFunc `json:"func"`
+	PressType string   `json:"press_type"`
 }
 
 type GameFunc struct {

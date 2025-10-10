@@ -60,6 +60,8 @@ func LoadConfig(path string) (GameConfig, error) {
 	return config, err
 }
 
+// var x = engine.GAME_CONFIG.Objects[0].KeyMap[0].PressType
+
 func fmain() {
 	generateSource()
 }

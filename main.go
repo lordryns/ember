@@ -119,6 +119,9 @@ func setTabBasedOnId(id widget.ListItemID, mainContent *fyne.Container, window f
 		mainContent.Objects = []fyne.CanvasObject{functionContentTab(window)}
 	case 4:
 		mainContent.Objects = []fyne.CanvasObject{PhysicsContentTab()}
+	case 5:
+		mainContent.Objects = []fyne.CanvasObject{UpdatesContentTab(window)}
+
 	default:
 		mainContent.Objects = []fyne.CanvasObject{defaultContentTab(window, &engine.GAME_CONFIG)}
 	}
@@ -214,6 +217,11 @@ func keyMapListContainer(obi int) *widget.List {
 	return list
 }
 
+type ArgStruct struct {
+	Label *widget.Label
+	Entry *widget.Entry
+}
+
 func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyne.Container {
 	var currentObjectID int = -1
 	var tempKeyMap []globals.KeyMap
@@ -270,14 +278,19 @@ func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyn
 	// this has been an absolute pain in the ass
 	var updateKeyMapContent = func() {
 		if len(tempKeyMap) > 0 {
-			var list = widget.NewList(
+			var list *widget.List
+			list = widget.NewList(
 				func() int { return len(tempKeyMap) },
 				func() fyne.CanvasObject {
 					return widget.NewButton("", nil)
 				},
 				func(i widget.ListItemID, o fyne.CanvasObject) {
 					b := o.(*widget.Button)
-					b.SetText(fmt.Sprintf("%s -> %s", tempKeyMap[i].Key, tempKeyMap[i].Func.ID))
+					b.SetText(fmt.Sprintf("%s -> %s -> %s", tempKeyMap[i].Key, tempKeyMap[i].PressType, tempKeyMap[i].Func.ID))
+					b.OnTapped = func() {
+						tempKeyMap = append(tempKeyMap[:i], tempKeyMap[i+1:]...)
+						list.Refresh()
+					}
 				},
 			)
 			keyMapMainContent.Objects = []fyne.CanvasObject{list}
@@ -300,22 +313,21 @@ func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyn
 
 	var inputSelect = widget.NewSelect(engine.ALL_INPUTS.Keyboard, func(s string) {})
 	var funcSelect = widget.NewSelect(parseFunctionIDs(), func(s string) {})
-
+	var pressTypeSelect = widget.NewSelect(engine.INPUT_PRESS_TYPE, func(s string) {})
+	pressTypeSelect.SetSelectedIndex(0)
 	var keyMapTopBar = container.NewBorder(nil, nil, widget.NewLabel("Tap to remove"), widget.NewButton("Add Key", func() {
 		dialog.NewCustomConfirm("Add Key", "Add", "Dismiss",
-			container.NewVBox(inputSelect, funcSelect), func(b bool) {
+			container.NewVBox(inputSelect, funcSelect, pressTypeSelect), func(b bool) {
 				if b {
 					var ii = inputSelect.SelectedIndex()
 					var fi = funcSelect.SelectedIndex()
+					var pt = pressTypeSelect.SelectedIndex()
 
 					if ii > -1 && fi > -1 {
 						var cur globals.KeyMap
 						cur.Key = engine.ALL_INPUTS.Keyboard[ii]
+						cur.PressType = engine.INPUT_PRESS_TYPE[pt]
 
-						type ArgStruct struct {
-							Label *widget.Label
-							Entry *widget.Entry
-						}
 						var argEntries []ArgStruct
 
 						var curF = engine.GAME_CONFIG.Functions[fi]
@@ -364,6 +376,7 @@ func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyn
 			}, window).Show()
 		}
 	})
+	deleteObjectButton.Importance = widget.DangerImportance
 	var newObjectButton = widget.NewButton("Set Object", func() {
 		var id = func() string {
 			if len(idEntry.Text) > 0 {
@@ -425,6 +438,8 @@ func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyn
 
 	objectList.OnSelected = func(id widget.ListItemID) {
 		currentObjectID = id
+		tempKeyMap = engine.GAME_CONFIG.Objects[id].KeyMap
+		updateKeyMapContent()
 		var c = engine.GAME_CONFIG.Objects[id]
 		idEntry.SetText(c.ID)
 		shapeSelect.SetSelected(c.Shape)
@@ -513,6 +528,7 @@ func AddFunctionDialog(window fyne.Window, tType *string, functionsList *widget.
 				list.Refresh()
 			}
 		})
+		deleteButton.Importance = widget.DangerImportance
 		var d = dialog.NewCustom("Arguments", "Close", container.NewBorder(container.NewVBox(deleteButton), nil, nil, nil, list), window)
 		d.Resize(fyne.NewSize(200, 300))
 		d.Show()
@@ -603,17 +619,21 @@ func functionContentTab(window fyne.Window) *fyne.Container {
 			AddFunctionDialog(window, &tType, functionsList, e.ID, e.Args, e.Src)
 		}
 	})
-
+	var deleteFuncButton = widget.NewButton("Delete Function", func() {
+		if currentFuncID > -1 {
+			engine.GAME_CONFIG.Functions = append(engine.GAME_CONFIG.Functions[:currentFuncID], engine.GAME_CONFIG.Functions[currentFuncID+1:]...)
+			functionsList.Refresh()
+		}
+	})
 	var addFuncButton = widget.NewButton("Open Menu", func() {
+
 		dialog.ShowCustom("Function Menu", "Close", container.NewHBox(widget.NewButton("Add Function", func() {
 			AddFunctionDialog(window, &tType, functionsList, "", []globals.Arg{}, "")
-		}), widget.NewButton("Delete Function", func() {
-			if currentFuncID > -1 {
-				engine.GAME_CONFIG.Functions = append(engine.GAME_CONFIG.Functions[:currentFuncID], engine.GAME_CONFIG.Functions[currentFuncID+1:]...)
-				functionsList.Refresh()
-			}
-		})), window)
+		}), deleteFuncButton), window)
+
 	})
+
+	deleteFuncButton.Importance = widget.DangerImportance
 	addFuncButton.Importance = widget.HighImportance
 
 	var mainContainer = container.NewBorder(container.NewCenter(addFuncButton), nil, nil, nil, functionsList)
@@ -644,4 +664,93 @@ func PhysicsContentTab() *fyne.Container {
 
 	})
 	return container.NewVBox(gravityContainer, applyButton)
+}
+
+// claude assisted this fix
+func UpdatesContentTab(window fyne.Window) *fyne.Container {
+	var updateList *widget.List
+	var extractStringFromFuncStruct = func() []string {
+		var t []string
+		for _, fn := range engine.GAME_CONFIG.Functions {
+			t = append(t, fn.ID)
+		}
+		return t
+	}
+	var updateEntry = widget.NewSelect(extractStringFromFuncStruct(), func(s string) {})
+	var addUpdateButton = widget.NewButton("Add to Update", func() {
+		dialog.ShowCustomConfirm("Add to Update", "Add", "Cancel", updateEntry, func(b bool) {
+			if b {
+				var ui = updateEntry.SelectedIndex()
+				if ui > -1 {
+					var cur = engine.GAME_CONFIG.Functions[ui]
+					var curCopy = globals.GameFunc{
+						ID:   cur.ID,
+						Src:  cur.Src,
+						Args: make([]globals.Arg, len(cur.Args)),
+					}
+					// Deep copy the args
+					for i, arg := range cur.Args {
+						curCopy.Args[i] = globals.Arg{
+							ID:    arg.ID,
+							Type:  arg.Type,
+							Value: arg.Value,
+						}
+					}
+
+					if len(curCopy.Args) > 0 {
+						var argEntries []ArgStruct
+						for _, args := range curCopy.Args {
+							argEntries = append(argEntries, ArgStruct{
+								Label: widget.NewLabel(fmt.Sprintf("%v:", args.ID)),
+								Entry: widget.NewEntry(),
+							})
+						}
+						var funcContainer = container.NewVBox()
+						for _, astr := range argEntries {
+							funcContainer.Objects = append(funcContainer.Objects,
+								container.NewBorder(nil, nil, astr.Label, nil, astr.Entry))
+						}
+						dialog.ShowCustomConfirm("Args", "Confirm", "Cancel", funcContainer, func(b bool) {
+							if b {
+								for i, entry := range argEntries {
+									curCopy.Args[i].Value = entry.Entry.Text
+								}
+								engine.GAME_CONFIG.Update = append(engine.GAME_CONFIG.Update, curCopy)
+								fmt.Println(len(engine.GAME_CONFIG.Update))
+								updateList.Refresh()
+							}
+						}, window)
+					} else {
+						// If no args, add directly
+						engine.GAME_CONFIG.Update = append(engine.GAME_CONFIG.Update, curCopy)
+						updateList.Refresh()
+					}
+				}
+			}
+		}, window)
+	})
+	addUpdateButton.Importance = widget.HighImportance
+
+	updateList = widget.NewList(
+		func() int {
+			return len(engine.GAME_CONFIG.Update)
+		},
+		func() fyne.CanvasObject {
+			return widget.NewButton("", func() {})
+		},
+		func(lii widget.ListItemID, co fyne.CanvasObject) {
+			var update = engine.GAME_CONFIG.Update[lii]
+			co.(*widget.Button).SetText(fmt.Sprintf("%v -> %v", update.ID, update.Args))
+			index := lii
+			co.(*widget.Button).OnTapped = func() {
+				if index < len(engine.GAME_CONFIG.Update) {
+					engine.GAME_CONFIG.Update = append(
+						engine.GAME_CONFIG.Update[:index],
+						engine.GAME_CONFIG.Update[index+1:]...)
+					updateList.Refresh()
+				}
+			}
+		})
+
+	return container.NewBorder(container.NewCenter(addUpdateButton), nil, nil, nil, updateList)
 }

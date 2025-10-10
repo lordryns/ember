@@ -26,3 +26,5 @@ var ALL_INPUTS = globals.SupportedInputs{
 		"start", "select",
 	},
 }
+
+var INPUT_PRESS_TYPE = []string{"on_key_down", "on_key_up", "on_key_press", "is_key_pressed"}
