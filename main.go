@@ -41,24 +41,6 @@ func main() {
 	window.ShowAndRun()
 }
 
-func keyMapListContainer(obi int) *widget.List {
-	var items = engine.GAME_CONFIG.Objects[obi].KeyMap
-	var list = widget.NewList(
-		func() int { return len(items) },
-		func() fyne.CanvasObject {
-			return widget.NewButton("", nil)
-		},
-		func(i widget.ListItemID, o fyne.CanvasObject) {
-			b := o.(*widget.Button)
-			b.SetText(items[i].Key)
-			b.OnTapped = func() {
-				fmt.Println("Clicked:", items[i])
-			}
-		},
-	)
-
-	return list
-}
 func toolBar(window fyne.Window, projectPath *widget.Label, mainContentBlock *fyne.Container) *fyne.Container {
 	var runButton = widget.NewButton("", func() {})
 	runButton = widget.NewButton("Run Game", func() {
@@ -213,8 +195,28 @@ func spritesContentTab() *fyne.Container {
 	return container.NewHBox(textLabel)
 }
 
+func keyMapListContainer(obi int) *widget.List {
+	var items = engine.GAME_CONFIG.Objects[obi].KeyMap
+	var list = widget.NewList(
+		func() int { return len(items) },
+		func() fyne.CanvasObject {
+			return widget.NewButton("", nil)
+		},
+		func(i widget.ListItemID, o fyne.CanvasObject) {
+			b := o.(*widget.Button)
+			b.SetText(items[i].Key)
+			b.OnTapped = func() {
+				fmt.Println("Clicked:", items[i])
+			}
+		},
+	)
+
+	return list
+}
+
 func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyne.Container {
 	var currentObjectID int = -1
+	var tempKeyMap []globals.KeyMap
 
 	var objectList = widget.NewList(func() int { return len(engine.GAME_CONFIG.Objects) },
 		func() fyne.CanvasObject { return widget.NewLabel("") },
@@ -262,21 +264,84 @@ func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyn
 	var isAreaCheck = widget.NewCheck("Is Area", func(b bool) {})
 	var isStaticCheck = widget.NewCheck("Is Static", func(b bool) {})
 
-	var keyMapTopBar = container.NewBorder(nil, nil, nil, widget.NewButton("Add Key", func() {
-		dialog.NewCustomConfirm("Add Key", "Add", "Dismiss", container.NewCenter(widget.NewLabel("")), func(b bool) {}, window).Show()
-	}))
-	var keyMapMainContent = container.NewCenter(func() fyne.CanvasObject {
-		if currentObjectID > -1 {
-			if len(engine.GAME_CONFIG.Objects[currentObjectID].KeyMap) > 0 {
-				return container.NewCenter(keyMapListContainer(currentObjectID))
-			} else {
-				return container.NewCenter(widget.NewLabel("Nothing to see here..."))
-			}
+	var keyMapMainContent = container.NewStack(widget.NewLabel("Nothing to see here..."))
+
+	// update keymap display
+	// this has been an absolute pain in the ass
+	var updateKeyMapContent = func() {
+		if len(tempKeyMap) > 0 {
+			var list = widget.NewList(
+				func() int { return len(tempKeyMap) },
+				func() fyne.CanvasObject {
+					return widget.NewButton("", nil)
+				},
+				func(i widget.ListItemID, o fyne.CanvasObject) {
+					b := o.(*widget.Button)
+					b.SetText(fmt.Sprintf("%s -> %s", tempKeyMap[i].Key, tempKeyMap[i].Func.ID))
+				},
+			)
+			keyMapMainContent.Objects = []fyne.CanvasObject{list}
 		} else {
-			return container.NewCenter(widget.NewLabel("Nothing to see here..."))
+			keyMapMainContent.Objects = []fyne.CanvasObject{container.NewCenter(widget.NewLabel("Nothing to see here..."))}
 		}
-	}())
-	var keyMapContainer = container.NewVBox(keyMapTopBar, keyMapMainContent)
+		keyMapMainContent.Refresh()
+	}
+	var parseFunctionIDs = func() []string {
+		var s []string
+		var fn = engine.GAME_CONFIG.Functions
+
+		for _, f := range fn {
+			s = append(s, f.ID)
+		}
+
+		return s
+
+	}
+
+	var inputSelect = widget.NewSelect(engine.ALL_INPUTS.Keyboard, func(s string) {})
+	var funcSelect = widget.NewSelect(parseFunctionIDs(), func(s string) {})
+
+	var keyMapTopBar = container.NewBorder(nil, nil, widget.NewLabel("Tap to remove"), widget.NewButton("Add Key", func() {
+		dialog.NewCustomConfirm("Add Key", "Add", "Dismiss",
+			container.NewVBox(inputSelect, funcSelect), func(b bool) {
+				if b {
+					var ii = inputSelect.SelectedIndex()
+					var fi = funcSelect.SelectedIndex()
+
+					if ii > -1 && fi > -1 {
+						var cur globals.KeyMap
+						cur.Key = engine.ALL_INPUTS.Keyboard[ii]
+
+						type ArgStruct struct {
+							Label *widget.Label
+							Entry *widget.Entry
+						}
+						var argEntries []ArgStruct
+
+						var curF = engine.GAME_CONFIG.Functions[fi]
+
+						for _, args := range curF.Args {
+							argEntries = append(argEntries, ArgStruct{Label: widget.NewLabel(fmt.Sprintf("%v:", args.ID)), Entry: widget.NewEntry()})
+						}
+						var funcContainer = container.NewVBox()
+						for _, astr := range argEntries {
+							funcContainer.Objects = append(funcContainer.Objects, container.NewBorder(nil, nil, astr.Label, nil, astr.Entry))
+						}
+						dialog.ShowCustomConfirm("Set Args", "Set", "Cancel", funcContainer, func(b bool) {
+
+							for i := range argEntries {
+								curF.Args[i].Value = argEntries[i].Entry.Text
+							}
+
+							cur.Func = curF
+							tempKeyMap = append(tempKeyMap, cur)
+							updateKeyMapContent()
+						}, window)
+					}
+				}
+			}, window).Show()
+	}))
+	var keyMapContainer = container.NewBorder(keyMapTopBar, nil, nil, nil, keyMapMainContent)
 	var keyPressButton = widget.NewButton("Key map", func() {
 		var keyMapDialog = dialog.NewCustom("Key Map", "Close", keyMapContainer, window)
 		keyMapDialog.Resize(fyne.NewSize(400, 400))
@@ -336,7 +401,9 @@ func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyn
 
 		var objects = engine.GAME_CONFIG.Objects
 		var object = globals.GameObject{ID: id, Shape: shape, Size: size,
-			Pos: pos, Color: color, IsBody: isBodyCheck.Checked, HasArea: isAreaCheck.Checked, IsStatic: isStaticCheck.Checked, Weight: weight}
+			Pos: pos, Color: color, IsBody: isBodyCheck.Checked, HasArea: isAreaCheck.Checked, IsStatic: isStaticCheck.Checked, Weight: weight,
+			KeyMap: tempKeyMap}
+		tempKeyMap = []globals.KeyMap{}
 
 		var canUpdate bool = true
 		for i, obj := range objects {
@@ -370,6 +437,7 @@ func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyn
 		isAreaCheck.SetChecked(c.HasArea)
 		isStaticCheck.SetChecked(c.IsStatic)
 		weightEntry.SetText(strconv.Itoa(c.Weight))
+		tempKeyMap = c.KeyMap
 	}
 
 	var mainContent = container.NewVBox(container.NewCenter(container.NewHBox(newObjectButton, deleteObjectButton)), idShapeRow, positionRow, sizeRow, colorRow, areaBodyKeymapRow, weightEntry)

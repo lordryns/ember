@@ -30,8 +30,8 @@ type Size struct {
 	Y int `json:"y"`
 }
 type KeyMap struct {
-	Key  string `json:"key"`
-	Func string `json:"func"`
+	Key  string   `json:"key"`
+	Func GameFunc `json:"func"`
 }
 
 type GameFunc struct {
@@ -41,6 +41,13 @@ type GameFunc struct {
 }
 
 type Arg struct {
-	ID   string `json:"id"`
-	Type string `json:"type"`
+	ID    string `json:"id"`
+	Type  string `json:"type"`
+	Value string `json:"values"`
+}
+type SupportedInputs struct {
+	Keyboard []string
+	Mouse    []string
+	Touch    []string
+	Gamepad  []string
 }
