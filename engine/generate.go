@@ -31,13 +31,18 @@ setGravity({{.Gravity}});
 {{range .Objects}}
 // Create object {{.ID}}
 var {{.ID}} = add([
-	rect({{.Size.X}}, {{.Size.Y}}),
+		{{if eq .Shape "Rect"}}
+			rect({{.Size.X}}, {{.Size.Y}}) 
+		{{else if eq .Shape "Circle"}} circle({{.Size.X}}) 
+		{{else}}
+			{{end}},
 	pos({{.Pos.X}}, {{.Pos.Y}}),
 	color("{{.Color}}"),
 	{{- if .IsBody }}body({isStatic: {{.IsStatic}}}),{{- end }}
 	{{- if .HasArea }}area(),{{- end }}
 ]);
-{{.ID}}.gravityScale = {{.Weight}};
+{{.ID}}.mass = {{.Mass}};
+{{.ID}}.gravityScale = {{.GravityScale}};
 {{$objID := .ID}}
 
 {{range .KeyMap}}

@@ -189,8 +189,11 @@ func defaultContentTab(window fyne.Window, config *globals.GameConfig) *fyne.Con
 
 		}()
 	})
+
 	var geometryContainer = container.New(layout.NewGridLayout(3), geometryLabel, XEntry, YEntry)
-	return container.NewVBox(titleContainer, geometryContainer, backgroundContainer, applyButton)
+
+	var bottomStack = container.NewStack(container.NewBorder(nil, container.NewVBox(widget.NewSeparator(), widget.NewLabel(engine.PROJECT_PATH)), nil, nil, nil))
+	return container.NewStack(container.NewVBox(titleContainer, geometryContainer, backgroundContainer, applyButton), bottomStack)
 }
 
 func spritesContentTab() *fyne.Container {
@@ -238,7 +241,7 @@ func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyn
 
 	var shapeOptions = []string{"Choose shape", "Rect", "Circle"}
 	var shapeSelect = widget.NewSelect(shapeOptions, func(s string) {})
-	shapeSelect.SetSelected("Choose shape")
+	shapeSelect.SetSelectedIndex(0)
 	var idShapeRow = container.New(layout.NewGridLayout(2), idEntry, shapeSelect)
 
 	var XPosEntry = widget.NewEntry()
@@ -360,8 +363,13 @@ func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyn
 		keyMapDialog.Show()
 	})
 
-	var weightEntry = widget.NewEntry()
-	weightEntry.SetPlaceHolder("Set Object Weight")
+	var massEntry = widget.NewEntry()
+	massEntry.SetPlaceHolder("Set Object Mass")
+
+	var gravityScaleEntry = widget.NewEntry()
+	gravityScaleEntry.SetPlaceHolder("Set Gravity scale")
+
+	var massScaleContainer = container.NewGridWithColumns(2, massEntry, gravityScaleEntry)
 
 	var areaBodyKeymapRow = container.NewGridWithColumns(4, isBodyCheck, isAreaCheck, isStaticCheck, keyPressButton)
 
@@ -408,15 +416,18 @@ func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyn
 			return globals.Size{X: helpers.CovertToInt(XSizeEntry.Text), Y: helpers.CovertToInt(YSizeEntry.Text)}
 		}()
 
-		var weight = func() int {
-			return helpers.CovertToInt(weightEntry.Text)
+		var mass = func() int {
+			return helpers.CovertToInt(massEntry.Text)
+		}()
+
+		var gravityScale = func() int {
+			return helpers.CovertToInt(gravityScaleEntry.Text)
 		}()
 
 		var objects = engine.GAME_CONFIG.Objects
 		var object = globals.GameObject{ID: id, Shape: shape, Size: size,
-			Pos: pos, Color: color, IsBody: isBodyCheck.Checked, HasArea: isAreaCheck.Checked, IsStatic: isStaticCheck.Checked, Weight: weight,
+			Pos: pos, Color: color, IsBody: isBodyCheck.Checked, HasArea: isAreaCheck.Checked, IsStatic: isStaticCheck.Checked, Mass: mass, GravityScale: gravityScale,
 			KeyMap: tempKeyMap}
-		tempKeyMap = []globals.KeyMap{}
 
 		var canUpdate bool = true
 		for i, obj := range objects {
@@ -451,11 +462,12 @@ func objectContentTab(mainContentBlock *fyne.Container, window fyne.Window) *fyn
 		isBodyCheck.SetChecked(c.IsBody)
 		isAreaCheck.SetChecked(c.HasArea)
 		isStaticCheck.SetChecked(c.IsStatic)
-		weightEntry.SetText(strconv.Itoa(c.Weight))
+		massEntry.SetText(strconv.Itoa(c.Mass))
+		gravityScaleEntry.SetText(strconv.Itoa(c.GravityScale))
 		tempKeyMap = c.KeyMap
 	}
 
-	var mainContent = container.NewVBox(container.NewCenter(container.NewHBox(newObjectButton, deleteObjectButton)), idShapeRow, positionRow, sizeRow, colorRow, areaBodyKeymapRow, weightEntry)
+	var mainContent = container.NewVBox(container.NewCenter(container.NewHBox(newObjectButton, deleteObjectButton)), idShapeRow, positionRow, sizeRow, colorRow, areaBodyKeymapRow, massScaleContainer)
 	var layoutSplit = container.NewHSplit(mainContent, objectList)
 	layoutSplit.SetOffset(0.8)
 	return container.New(layout.NewGridLayout(1), layoutSplit)
